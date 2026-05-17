@@ -4,8 +4,8 @@
 Connection Tutorial:
 
 1. Connect the LD6002 radar sensor to your ESP32 board as follows:
-  - LD6002 TX  -> ESP32 GPIO16 (RX2)
-  - LD6002 RX  -> ESP32 GPIO17 (TX2)
+  - LD6002 TX  -> ESP32 GPIO16 (RX2) change to GPIO14
+  - LD6002 RX  -> ESP32 GPIO17 (TX2) change to GPIO15
   - LD6002 GND -> ESP32 GND
   - LD6002 VCC -> ESP32 3.3V or 5V (check your module's voltage requirements)
 
@@ -23,7 +23,7 @@ LD6002 radar(Serial1);
 void setup()
 {
   Serial.begin(115200);
-  Serial1.begin(1382400, SERIAL_8N1, 16, 17);
+  Serial1.begin(115200, SERIAL_8N1, 14, 15);
 
 }
 
