@@ -1,4 +1,13 @@
+removed GPIO pull-up resistors 
+increased maximum frame size to 64 
+### 🔑 核心改进说明
 
+| 改进项 | 实现方式 | 优势 |
+|:---|:---|:---|
+| **🛡️ 错误日志系统** | 新增 `ErrorCode` 枚举 + `getLastError()` + `errorToString()` | 解析失败不再“静默丢弃”，可精准定位是校验头/载荷出错、缓冲区溢出还是未知帧，极大方便硬件调试与产线良率分析。 |
+| **🔄 跨平台字节序** | 弃用隐式 `memcpy`，改用显式位移拼装 `bytesToUInt32`，并提供 `LD6002_BIG_ENDIAN` 宏开关 | 彻底解决 AVR/ESP32/ARM/RISC-V 等不同架构主机因大小端差异导致的浮点数解析乱码问题。默认适配 ESP32（小端序）。 |
+| **📌 引脚宏定义** | `#define LD6002_RX_PIN 14` 等宏集中管理，传入 `Serial1.begin()` | 解耦硬件依赖，切换开发板（如 ESP32-S3、NodeMCU、Wemos）只需改头文件宏，符合工程化规范。 |
+| **🔢 类型安全加固** | `expectedFrameLen` 改为 `uint16_t`，增加 `static_assert` 校验 IEEE 754 兼容性 | 防止协议升级导致帧长计算溢出；编译期拦截非标准浮点架构的潜在风险。 |
 
 # 📡 HLK-LD6002 - Arduino Library
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
