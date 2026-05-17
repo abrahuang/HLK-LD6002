@@ -1,69 +1,71 @@
-
-
 /*
-Connection Tutorial:
-
-1. Connect the LD6002 radar sensor to your ESP32 board as follows:
-  - LD6002 TX  -> ESP32 GPIO16 (RX2) change to GPIO14
-  - LD6002 RX  -> ESP32 GPIO17 (TX2) change to GPIO15
-  - LD6002 GND -> ESP32 GND
-  - LD6002 VCC -> ESP32 3.3V or 5V (check your module's voltage requirements)
-
-2. Make sure you have installed the "LD6002.h" library in your Arduino IDE.
-
-3. Upload this sketch to your ESP32 board.
-
-4. Open the Serial Monitor at 115200 baud to view heart rate, breath rate, and distance data.
-
+连接说明：
+LD6002 TX  -> ESP32 LD6002_RX_PIN
+LD6002 RX  -> ESP32 LD6002_TX_PIN (仅单向接收时可悬空)
+LD6002 GND -> ESP32 GND
+LD6002 VCC -> ESP32 3.3V 或 5V (按模块丝印确认)
 */
+
 #include <Arduino.h>
 #include "LD6002.h"
+
+// 🔹 引脚与波特率宏定义（修改此处即可适配任意开发板）
+#define LD6002_RX_PIN  14
+#define LD6002_TX_PIN  15
+#define LD6002_BAUD    115200
+
 LD6002 radar(Serial1);
 
-void setup()
-{
-  Serial.begin(115200);
-  Serial1.begin(115200, SERIAL_8N1, 14, 15);
+void setup() {
+    Serial.begin(115200);
+    while (!Serial); // 等待串口终端连接（可选）
+    Serial.println("🟢 LD6002 Radar Test Started");
 
+    // 初始化串口1，引脚通过宏传入
+    Serial1.begin(LD6002_BAUD, SERIAL_8N1, LD6002_RX_PIN, LD6002_TX_PIN);
 }
 
 float lastHeartRate = 0;
 float lastBreathRate = 0;
 float lastDistance = 0;
-void loop()
-{
-  radar.update();
 
-  if (radar.hasNewHeartRate())
-  {
-   float heartRateMain = radar.getHeartRate();
-   if ((heartRateMain != lastHeartRate) && (heartRateMain > 0))
-   {
-    Serial.printf("Heart Rate: %.2f bpm\n", heartRateMain);
-   }
-   lastHeartRate = heartRateMain;
-   radar.clearHeartRateFlag();
-  }
+void loop() {
+    radar.update();
 
-  if (radar.hasNewBreathRate())
-  {
-   float breathRateMain = radar.getBreathRate();
-   if ((breathRateMain != lastBreathRate) && (breathRateMain > 0))
-   {
-    Serial.printf("Breath Rate: %.2f bpm\n", breathRateMain);
-   }
-   lastBreathRate = breathRateMain;
-   radar.clearBreathRateFlag();
-  }
+    // 🔹 错误日志监控与打印
+    LD6002::ErrorCode err = radar.getLastError();
+    if (err != LD6002::ErrorCode::NoError) {
+        Serial.printf("⚠️ [Radar Error] %s\n", radar.errorToString(err));
+        radar.clearError(); // 处理后清除，避免重复打印
+    }
 
-  if (radar.hasNewDistance())
-  {
-   float distanceMain = radar.getDistance();
-   if ((distanceMain != lastDistance) && (distanceMain > 0))
-   {
-    Serial.printf("Distance: %.2f cm\n", distanceMain);
-   }
-   lastDistance = distanceMain;
-   radar.clearDistanceFlag();
-  }
+    // 心率
+    if (radar.hasNewHeartRate()) {
+        float val = radar.getHeartRate();
+        if (val > 0 && val != lastHeartRate) {
+            Serial.printf("❤️ Heart Rate: %.2f bpm\n", val);
+            lastHeartRate = val;
+        }
+        radar.clearHeartRateFlag();
+    }
+
+    // 呼吸率
+    if (radar.hasNewBreathRate()) {
+        float val = radar.getBreathRate();
+        if (val > 0 && val != lastBreathRate) {
+            Serial.printf("🌬️ Breath Rate: %.2f bpm\n", val);
+            lastBreathRate = val;
+        }
+        radar.clearBreathRateFlag();
+    }
+
+    // 距离
+    if (radar.hasNewDistance()) {
+        float val = radar.getDistance();
+        if (val > 0 && val != lastDistance) {
+            Serial.printf("📏 Distance: %.2f cm\n", val);
+            lastDistance = val;
+        }
+        radar.clearDistanceFlag();
+    }
 }
